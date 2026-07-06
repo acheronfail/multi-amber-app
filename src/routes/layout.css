@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+html {
+	color-scheme: dark;
+	background-color: #020617; /* slate-950 */
+}
