@@ -75,7 +75,7 @@
 			<li>
 				1. Open your
 				<a
-					href="https://app.amber.com.au/developer"
+					href="https://app.amber.com.au/developers"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
