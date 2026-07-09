@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { accountStore } from '$lib/accounts.svelte';
+	import { settings } from '$lib/settings.svelte';
 	import AddAccountModal from '$lib/components/AddAccountModal.svelte';
 	import AccountCard from '$lib/components/AccountCard.svelte';
 
 	let showModal = $state(false);
 	const accounts = $derived(accountStore.accounts);
+	const compact = $derived(settings.view === 'compact');
 </script>
 
 <svelte:head>
@@ -22,23 +24,62 @@
 				<h1 class="text-lg font-black tracking-tight sm:text-xl">LIVE PRICES</h1>
 			</div>
 			{#if accounts.length}
-				<button
-					type="button"
-					onclick={() => (showModal = true)}
-					class="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
-				>
-					<svg
-						class="h-4 w-4"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						stroke-width="2.5"
+				<div class="flex items-center gap-2">
+					<!-- View toggle: detailed ⇄ compact -->
+					<div
+						class="flex items-center gap-0.5 rounded-full bg-slate-800 p-0.5"
+						role="group"
+						aria-label="View"
 					>
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-					</svg>
-					<span class="hidden sm:inline">Add account</span>
-					<span class="sm:hidden">Add</span>
-				</button>
+						<button
+							type="button"
+							onclick={() => settings.setView('detailed')}
+							aria-pressed={!compact}
+							title="Detailed view"
+							class="rounded-full p-1.5 transition {!compact
+								? 'bg-emerald-500 text-slate-950'
+								: 'text-slate-400 hover:text-white'}"
+						>
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+								<path
+									d="M3 4.5A1.5 1.5 0 014.5 3h11A1.5 1.5 0 0117 4.5v3A1.5 1.5 0 0115.5 9h-11A1.5 1.5 0 013 7.5v-3zM3 12.5A1.5 1.5 0 014.5 11h11a1.5 1.5 0 011.5 1.5v3A1.5 1.5 0 0115.5 17h-11A1.5 1.5 0 013 15.5v-3z"
+								/>
+							</svg>
+						</button>
+						<button
+							type="button"
+							onclick={() => settings.setView('compact')}
+							aria-pressed={compact}
+							title="Compact view"
+							class="rounded-full p-1.5 transition {compact
+								? 'bg-emerald-500 text-slate-950'
+								: 'text-slate-400 hover:text-white'}"
+						>
+							<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+								<path
+									d="M3 4.5A1.5 1.5 0 014.5 3h3A1.5 1.5 0 019 4.5v3A1.5 1.5 0 017.5 9h-3A1.5 1.5 0 013 7.5v-3zM11 4.5A1.5 1.5 0 0112.5 3h3A1.5 1.5 0 0117 4.5v3A1.5 1.5 0 0115.5 9h-3A1.5 1.5 0 0111 7.5v-3zM3 12.5A1.5 1.5 0 014.5 11h3A1.5 1.5 0 019 12.5v3A1.5 1.5 0 017.5 17h-3A1.5 1.5 0 013 15.5v-3zM11 12.5a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5v3a1.5 1.5 0 01-1.5 1.5h-3a1.5 1.5 0 01-1.5-1.5v-3z"
+								/>
+							</svg>
+						</button>
+					</div>
+					<button
+						type="button"
+						onclick={() => (showModal = true)}
+						class="flex items-center gap-1.5 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+					>
+						<svg
+							class="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							stroke-width="2.5"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+						</svg>
+						<span class="hidden sm:inline">Add account</span>
+						<span class="sm:hidden">Add</span>
+					</button>
+				</div>
 			{/if}
 		</div>
 	</header>
@@ -75,9 +116,13 @@
 				</button>
 			</div>
 		{:else}
-			<div class="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+			<div
+				class={compact
+					? 'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+					: 'grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3'}
+			>
 				{#each accounts as account (account.id)}
-					<AccountCard {account} />
+					<AccountCard {account} {compact} />
 				{/each}
 			</div>
 		{/if}
