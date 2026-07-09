@@ -1,8 +1,8 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 	<!-- Full-bleed background: platform applies its own mask/rounding.
 	     Bolt is kept inside the maskable safe zone (inner 80%). -->
-	<rect width="512" height="512" fill="#10b981" />
+	<rect width="512" height="512" fill="#020617" />
 	<g transform="translate(256 256) scale(12) translate(-11 -12)">
-		<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="#020617" />
+		<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" fill="#34d399" />
 	</g>
 </svg>
