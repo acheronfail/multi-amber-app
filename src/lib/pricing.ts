@@ -48,11 +48,17 @@ export function priceSummary(interval: Interval): string {
 }
 
 /**
- * Format a price in c/kWh. Amber prices are already in cents; we round to a
- * whole cent for the big display and one decimal elsewhere.
+ * Format a price. Amber prices are in cents; we show cents (e.g. `38¢`) until
+ * the magnitude reaches a dollar, then switch to dollars (e.g. `$1.05`) so the
+ * big display stays readable.
  */
 export function formatCents(perKwh: number, decimals = 0): string {
-	return `${perKwh.toFixed(decimals)}¢`;
+	const sign = perKwh < 0 ? '-' : '';
+	const abs = Math.abs(perKwh);
+	if (abs >= 100) {
+		return `${sign}$${(abs / 100).toFixed(2)}`;
+	}
+	return `${sign}${abs.toFixed(decimals)}¢`;
 }
 
 /** Local HH:mm for the start of an interval. */
@@ -65,9 +71,9 @@ export function formatTime(iso: string): string {
 }
 
 const CHANNEL_LABELS: Record<ChannelType, string> = {
-	general: 'General Usage',
-	controlledLoad: 'Controlled Load',
-	feedIn: 'Solar Feed-in'
+	general: 'General',
+	controlledLoad: 'Controlled',
+	feedIn: 'Feed-in'
 };
 
 export function channelLabel(type: ChannelType): string {

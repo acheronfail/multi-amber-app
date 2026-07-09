@@ -231,7 +231,7 @@
 								<div class="grid grid-cols-2 gap-2">
 									{#if controlled}
 										<div class="rounded-xl bg-slate-800/60 px-3 py-2">
-											<div class="text-[11px] font-medium text-slate-400">
+											<div class="text-[11px] leading-tight font-medium text-slate-400">
 												{channelLabel('controlledLoad')}
 											</div>
 											<div class="text-lg font-bold text-white">
@@ -243,7 +243,7 @@
 									{/if}
 									{#if feedIn}
 										<div class="rounded-xl bg-slate-800/60 px-3 py-2">
-											<div class="text-[11px] font-medium text-slate-400">
+											<div class="text-[11px] leading-tight font-medium text-slate-400">
 												{channelLabel('feedIn')}
 											</div>
 											<div class="text-lg font-bold text-amber-300">
