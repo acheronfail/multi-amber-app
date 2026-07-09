@@ -14,7 +14,7 @@
 <div class="min-h-screen bg-slate-950 text-white">
 	<!-- Header -->
 	<header class="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-		<div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+		<div class="px-safe pt-safe mx-auto flex max-w-7xl items-center justify-between pb-4">
 			<div class="flex items-center gap-2">
 				<svg class="h-6 w-6 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
 					<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
@@ -43,7 +43,7 @@
 		</div>
 	</header>
 
-	<main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+	<main class="px-safe pb-safe mx-auto max-w-7xl pt-6 sm:pt-8">
 		{#if accounts.length === 0}
 			<!-- Empty state: central add button -->
 			<div class="flex min-h-[70vh] flex-col items-center justify-center text-center">

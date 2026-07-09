@@ -5,3 +5,26 @@ html {
 	color-scheme: dark;
 	background-color: #020617; /* slate-950 */
 }
+
+/*
+ * iOS standalone PWA safe areas. With viewport-fit=cover the app draws edge to
+ * edge, so content near the notch / Dynamic Island / home indicator must be
+ * inset. Each utility keeps a sensible base gutter and grows to the inset when
+ * a device requires it.
+ */
+.pt-safe {
+	padding-top: max(1rem, env(safe-area-inset-top));
+}
+.pb-safe {
+	padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+.px-safe {
+	padding-left: max(1rem, env(safe-area-inset-left));
+	padding-right: max(1rem, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+	.px-safe {
+		padding-left: max(1.5rem, env(safe-area-inset-left));
+		padding-right: max(1.5rem, env(safe-area-inset-right));
+	}
+}
