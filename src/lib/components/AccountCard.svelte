@@ -2,8 +2,9 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { Account } from '$lib/accounts.svelte';
 	import { accountStore } from '$lib/accounts.svelte';
+	import { settings } from '$lib/settings.svelte';
 	import { fetchSites, fetchPrices, AmberError } from '$lib/amber';
-	import type { Interval, Site } from '$lib/types';
+	import type { ChannelType, Interval, Site } from '$lib/types';
 	import {
 		byChannel,
 		channelLabel,
@@ -24,6 +25,8 @@
 		intervals: Interval[];
 	}
 
+	type Channels = Record<ChannelType, Interval[]>;
+
 	let loading = $state(true);
 	let refreshing = $state(false);
 	let error = $state<string | null>(null);
@@ -35,6 +38,25 @@
 	const REFRESH_MS = 60 * 1000; // refresh prices every 60 seconds
 	let timer: ReturnType<typeof setInterval>;
 	let clock: ReturnType<typeof setInterval>;
+
+	// Return order from the API: General > Controlled Load > Feed In.
+	const CHANNEL_ORDER: ChannelType[] = ['general', 'controlledLoad', 'feedIn'];
+
+	function availableChannels(chans: Channels): ChannelType[] {
+		return CHANNEL_ORDER.filter((t) => chans[t].length > 0);
+	}
+
+	/**
+	 * The channel to feature. Uses the user's saved choice when it's still
+	 * available for the site, otherwise falls back to general (or the first
+	 * available channel) so a stale/invalid selection never breaks the view.
+	 */
+	function activeChannel(chans: Channels): ChannelType {
+		const available = availableChannels(chans);
+		const saved = settings.channels[account.id];
+		if (saved && available.includes(saved)) return saved;
+		return available.includes('general') ? 'general' : (available[0] ?? 'general');
+	}
 
 	/** Live "refreshed X ago" label, recomputed as `now` ticks each second. */
 	const agoLabel = $derived.by(() => {
@@ -48,10 +70,12 @@
 		return `refreshed ${Math.floor(mins / 60)}h ago`;
 	});
 
-	// The compact view collapses to the first site's current general price.
+	// The compact view collapses to the first site's active-channel price.
 	const primary = $derived(sites[0]);
-	const primaryGeneral = $derived(
-		primary ? currentOf(byChannel(primary.intervals).general) : undefined
+	const primaryChannels = $derived(primary ? byChannel(primary.intervals) : undefined);
+	const primaryChannel = $derived(primaryChannels ? activeChannel(primaryChannels) : undefined);
+	const primaryMain = $derived(
+		primaryChannels && primaryChannel ? currentOf(primaryChannels[primaryChannel]) : undefined
 	);
 
 	async function load(initial = false) {
@@ -95,6 +119,13 @@
 		if (confirm(`Remove "${account.label}"? Its token is deleted from this device.`)) {
 			accountStore.remove(account.id);
 		}
+	}
+
+	/** Feed-in prices are shown as their magnitude (what you're paid). */
+	function channelDisplay(interval: Interval): string {
+		return interval.channelType === 'feedIn'
+			? formatCents(Math.abs(interval.perKwh))
+			: formatCents(interval.perKwh);
 	}
 </script>
 
@@ -158,9 +189,14 @@
 			: ''}"
 	>
 		<div class="mb-2 flex items-start justify-between gap-1">
-			<h2 class="min-w-0 truncate text-sm font-semibold text-white" title={account.label}>
-				{account.label}
-			</h2>
+			<div class="min-w-0">
+				<h2 class="truncate text-sm font-semibold text-white" title={account.label}>
+					{account.label}
+				</h2>
+				{#if primaryChannel}
+					<p class="truncate text-[11px] text-slate-500">{channelLabel(primaryChannel)}</p>
+				{/if}
+			</div>
 			<div class="-mt-1.5 -mr-2 shrink-0">{@render optionsMenu()}</div>
 		</div>
 
@@ -177,28 +213,28 @@
 				<span class="truncate">{error}</span>
 				<span class="text-slate-500 underline">Try again</span>
 			</button>
-		{:else if primaryGeneral}
+		{:else if primaryMain}
 			<div class="flex items-baseline gap-1.5">
 				<span
 					class="text-3xl font-black leading-none"
-					style="color: {descriptorColor(primaryGeneral.descriptor)}"
+					style="color: {descriptorColor(primaryMain.descriptor)}"
 				>
-					{formatCents(primaryGeneral.perKwh)}
+					{channelDisplay(primaryMain)}
 				</span>
 				<span class="text-xs font-medium text-slate-400">/kWh</span>
 			</div>
 			<div class="mt-1.5 text-[11px] leading-tight">
-				<div class="font-semibold" style="color: {descriptorColor(primaryGeneral.descriptor)}">
-					{descriptorLabel(primaryGeneral.descriptor)}
+				<div class="font-semibold" style="color: {descriptorColor(primaryMain.descriptor)}">
+					{descriptorLabel(primaryMain.descriptor)}
 				</div>
-				<div class="text-slate-400">{Math.round(primaryGeneral.renewables)}% renewable</div>
+				<div class="text-slate-400">{Math.round(primaryMain.renewables)}% renewable</div>
 			</div>
 		{:else}
 			<p class="text-xs text-slate-500">No active sites.</p>
 		{/if}
 	</section>
 {:else}
-	<!-- Detailed view: gauge, channel prices and forecast. -->
+	<!-- Detailed view: gauge, switchable channel prices and forecast. -->
 	<section
 		class="flex flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/70"
 	>
@@ -258,62 +294,69 @@
 				</div>
 			{:else}
 				{#each sites as { site, intervals } (site.id)}
-					{@const channels = byChannel(intervals)}
-					{@const general = currentOf(channels.general)}
-					{@const controlled = currentOf(channels.controlledLoad)}
-					{@const feedIn = currentOf(channels.feedIn)}
+					{@const chans = byChannel(intervals)}
+					{@const active = activeChannel(chans)}
+					{@const main = currentOf(chans[active])}
+					{@const others = availableChannels(chans).filter((t) => t !== active)}
 					<div
 						class="space-y-5 {sites.length > 1
 							? 'mb-6 border-b border-slate-800 pb-6 last:mb-0 last:border-0 last:pb-0'
 							: ''}"
 					>
-						{#if general}
+						{#if main}
 							<div class="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
-								<PriceGauge interval={general} />
+								<PriceGauge interval={main} />
 								<div class="flex-1 space-y-3 text-center sm:text-left">
 									<div>
 										<span
 											class="inline-block rounded-full px-3 py-1 text-xs font-bold"
 											style="background: color-mix(in srgb, {descriptorColor(
-												general.descriptor
-											)} 22%, transparent); color: {descriptorColor(general.descriptor)}"
+												main.descriptor
+											)} 22%, transparent); color: {descriptorColor(main.descriptor)}"
 										>
-											{descriptorLabel(general.descriptor)}
+											{channelLabel(active)} · {descriptorLabel(main.descriptor)}
 										</span>
-										<p class="mt-2 text-sm text-slate-300">{priceSummary(general)}</p>
-									</div>
-									<div class="grid grid-cols-2 gap-2">
-										{#if controlled}
-											<div class="rounded-xl bg-slate-800/60 px-3 py-2">
-												<div class="text-[11px] leading-tight font-medium text-slate-400">
-													{channelLabel('controlledLoad')}
-												</div>
-												<div class="text-lg font-bold text-white">
-													{formatCents(controlled.perKwh)}<span
-														class="text-xs font-normal text-slate-400">/kWh</span
-													>
-												</div>
-											</div>
-										{/if}
-										{#if feedIn}
-											<div class="rounded-xl bg-slate-800/60 px-3 py-2">
-												<div class="text-[11px] leading-tight font-medium text-slate-400">
-													{channelLabel('feedIn')}
-												</div>
-												<div class="text-lg font-bold text-amber-300">
-													{formatCents(Math.abs(feedIn.perKwh))}<span
-														class="text-xs font-normal text-slate-400">/kWh</span
-													>
-												</div>
-											</div>
+										{#if active === 'general'}
+											<p class="mt-2 text-sm text-slate-300">{priceSummary(main)}</p>
 										{/if}
 									</div>
+									{#if others.length}
+										<div class="grid grid-cols-2 gap-2">
+											{#each others as t (t)}
+												{@const ci = currentOf(chans[t])}
+												{#if ci}
+													<button
+														type="button"
+														onclick={() => settings.setChannel(account.id, t)}
+														title="Show {channelLabel(t)} as the main price"
+														class="rounded-xl bg-slate-800/60 px-3 py-2 text-left transition hover:bg-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+													>
+														<div class="text-[11px] leading-tight font-medium text-slate-400">
+															{channelLabel(t)}
+														</div>
+														<div
+															class="text-lg font-bold {t === 'feedIn'
+																? 'text-amber-300'
+																: 'text-white'}"
+														>
+															{channelDisplay(ci)}<span class="text-xs font-normal text-slate-400"
+																>/kWh</span
+															>
+														</div>
+													</button>
+												{/if}
+											{/each}
+										</div>
+									{/if}
 								</div>
 							</div>
 						{/if}
 
-						{#if channels.general.length}
-							<Forecast intervals={forecastOf(channels.general)} title="General usage forecast" />
+						{#if chans[active].length}
+							<Forecast
+								intervals={forecastOf(chans[active])}
+								title="{channelLabel(active)} forecast"
+							/>
 						{/if}
 					</div>
 				{:else}
