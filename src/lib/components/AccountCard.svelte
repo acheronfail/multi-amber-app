@@ -353,10 +353,14 @@
 						{/if}
 
 						{#if chans[active].length}
-							<Forecast
-								intervals={forecastOf(chans[active])}
-								title="{channelLabel(active)} forecast"
-							/>
+							<!-- Remount on channel change so the forecast can't reuse stale
+							     blocks from another channel's identical time grid. -->
+							{#key active}
+								<Forecast
+									intervals={forecastOf(chans[active])}
+									title="{channelLabel(active)} forecast"
+								/>
+							{/key}
 						{/if}
 					</div>
 				{:else}
